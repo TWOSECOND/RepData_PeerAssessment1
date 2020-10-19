@@ -1,0 +1,100 @@
+title: "Reproducible Research: Peer Assessment 1"
+
+## Loading and preprocessing the data
+```{r,echo= TRUE}
+data<-read.csv("./Reproducible Research/activity.csv")
+```
+
+## What is mean total number of steps taken per day?
+For this part of the assignment, you can ignore the missing values in the dataset.
+
+###Calculate the total number of steps taken per day
+```{r,echo=TRUE}
+totalsteps<-aggregate(steps~date,data,sum,na.rm=TRUE)
+colnames(totalsteps)<-c("Date","Steps")
+```
+
+###Make a histogram of the total number of steps taken each day
+```{r,echo=TRUE}
+hist(totalsteps$Steps,xlab="Steps",main = "Total Steps per Day",ylim = c(0,30))
+```
+
+###Calculate and report the mean and median of the total number of steps taken per day
+
+Here are the mean steps taken per day 
+```{r,echo=TRUE}
+mean(totalsteps$Steps)
+```
+
+Here are the median steps taken per day
+```{r,echo=TRUE}
+median(totalsteps$Steps)
+```
+## What is the average daily activity pattern?
+
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r,echo=TRUE}
+average<-aggregate(data$steps,by=list(data$interval), FUN=mean, na.rm=TRUE)
+colnames(average)<-c("interval","mean")
+plot(average$interval,average$mean,type="l",xlab = "Interval",ylab = "Average Steps",main="Average number of steps per intervals")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r,echo=TRUE}
+average[which.max(average$mean),]$interval
+```
+
+## Imputing missing values
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r,echo=TRUE}
+sum(is.na(data$steps))
+```
+
+Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+I would use mean for the missing vaule,create data1 as a new dataset 
+```{r,echo=TRUE}
+totalStepsByDay<-aggregate(steps~date, data, sum)
+averagestepbyinterval<-aggregate(steps~interval,data,mean)
+missingIndex<-is.na(data[,1])
+m<-mean(averagestepbyinterval$steps)
+data1<-data
+data1[missingIndex,1]<-m
+head(data1)
+```
+
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r, echo=TRUE}
+totalstepsbyday1<-aggregate(steps~date,data1,sum)
+hist(totalstepsbyday1$steps,xlab="Total Number of Steps Per Day", ylab="Number of Days",main = "Number of Steps taken each day after imputing missing data")
+```
+
+```{r,echo=TRUE}
+meanafterImputing<-mean(totalstepsbyday1$steps)
+meanafterImputing
+medianafterImputing<-median(totalstepsbyday1$steps)
+medianafterImputing
+```
+
+so after Imputting the missing numbers,the mean of total number of steps taken each day hasn't changed but the median of total number of steps taken each day changed a little bit.
+
+## Are there differences in activity patterns between weekdays and weekends?
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r, echo=TRUE}
+data1$date<-as.Date(data1$date)
+is_weekday<-function(d){
+  wd<-weekdays(d)
+    ifelse(wd=="Staturday"|wd=="Sunday","Weekend","Weekday")
+}
+wx<-sapply(data1$date, is_weekday)
+data1$Daytype<-as.factor(wx)
+head(data1)
+```
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+```{r,echo=TRUE}
+wk_df<-aggregate(steps~Daytype+interval,data=data1,FUN = mean)
+library(lattice)
+xyplot(steps~interval|factor(Daytype),layout=c(1,2),xlab="Interval",ylab="Number of Steps",type="l",data=wk_df)
+```
